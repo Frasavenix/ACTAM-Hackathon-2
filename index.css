@@ -1,0 +1,20 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #1a1a1a;
+    font-family: Arial, sans-serif;
+}
+
+.playbutton {
+    display: inline-block;
+    margin: 10px;
+    padding: 20px 30px;
+    background-color: #3a3a3a;
+    color: white;
+    border-radius: 5px;
+    font-size: 24px;
+    transition: all 0.1s;
+}

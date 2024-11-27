@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Controls</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #1a1a1a;
+        }
+        .button-container {
+            margin: 10px 0;
+        }
+        h1{
+            color: white;
+        }
+        button {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px 30px;
+            background-color: #3a3a3a;
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <h1>Audio Player</h1>
+
+    <div class="button-container" id="chords-container">
+        <button id="playbutton_Chords">Start Chords</button>
+        <button id="stopbutton_Chords">Stop Chords</button>
+    </div>
+    <div class="button-container" id="arpeggio-container">
+        <button id="playbutton_arpeggio">Start Arpeggio</button>
+        <button id="stopbutton_arpeggio">Stop Arpeggio</button>
+    </div>
+    <div class="button-container" id="drum-container">
+        <button id="startButton_drum">Start Drum Pattern</button>
+        <button id="stopButton_drum">Stop Drum Pattern</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.min.js"></script>
+    <script>
+
+        document.getElementById('startButton_drum').addEventListener('click', async () => {
+            await Tone.start();
+            console.log('Audio is ready');
+            
+            const sequence = null;
+            const kick = new Tone.Player("https://tonejs.github.io/audio/drum-samples/CR78/kick.mp3").toDestination();
+            const clap = new Tone.Player("https://tonejs.github.io/audio/drum-samples/CR78/snare.mp3").toDestination();
+            const hihat = new Tone.Player("https://tonejs.github.io/audio/drum-samples/CR78/hihat.mp3").toDestination();
+        
+            // Pattern più complesso con hi-hat e pause
+            const pattern = new Tone.Pattern((time, note) => {
+                if (note === 'kick') {
+                    kick.start(time);
+                } else if (note === 'clap') {
+                    clap.start(time);
+                } else if (note === 'hihat') {
+                    hihat.start(time);
+                }
+            }, ['kick', 'hihat', 'clap', 'hihat', 'kick', 'hihat', 'clap', 'hihat', 'kick', 'hihat', 'clap', 'hihat'], 'up');
+        
+            // Impostare il BPM e avviare il pattern
+            Tone.Transport.bpm.value = 126;
+            pattern.start(0);
+            Tone.Transport.start();
+        });
+        
+        // Setup Tone.js
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const reverb = new Tone.Reverb({ decay: 4, wet: 0.5 }).toDestination();
+        synth.connect(reverb);
+
+        const notes = [
+            { note: 'C4', duration: '4n' },
+            { note: 'E4', duration: '8n' },
+            { note: 'G4', duration: '16n' },
+            { note: 'B4', duration: '2n' }
+        ];
+
+        const part = new Tone.Part((time, value) => {
+            synth.triggerAttackRelease(value.note, value.duration, time);
+        }, notes).start(0);
+
+        let chords = [
+            { notes: ['G5', 'Bb5'], duration: "8n" },
+            { notes: ['G5', 'Bb5'], duration: "8n" },
+            { notes: ['F5', 'A5'], duration: "8n" },
+            { notes: ['F5', 'A5'], duration: "8n" },
+            { notes: ['D5', 'G5'], duration: "6n" },
+            { notes: ['D5', 'G5'], duration: "8n" },
+            { notes: ['D5', 'G5'], duration: "6n" },
+        ];
+
+        Tone.Transport.bpm.value = 126;
+        let accordi = null;
+let chordEvents = [];
+        const playChords = async () => {
+            await Tone.start();
+            let time = 0;
+            chordEvents = [];
+
+            chords.forEach((chord) => {
+                eventId = Tone.Transport.schedule((time) => {
+                    synth.triggerAttackRelease(chord.notes, chord.duration, time);
+                }, `+${time}`);
+                chordEvents.push(eventId);
+                time += Tone.Time(chord.duration).toSeconds() / (60 / Tone.Transport.bpm.value);
+            });
+            Tone.Transport.start();
+        };
+
+        const arpeggio = [
+            'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'G4', 'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'F4',
+            'C4', 'D4', 'F4', 'C4', 'D4', 'G4', 'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'G4',
+            'C4', 'D4', 'F4', 'C4', 'D4', 'F4', 'C4', 'D4', 'G4', 'C4', 'D4', 'Bb4', 'C5', 'C4', 'D4', 'G4', 'C4', 'D4', 'Bb4', 'C4', 'D4', 'F4'
+        ];
+
+        const playArpeggio = async () => {
+            const monoSynth = new Tone.MonoSynth({
+                oscillator: {
+                    type: "triangle"
+                },
+                filter: {
+                    Q: 6,
+                    type: "lowpass",
+                    rolloff: -48
+                },
+                envelope: {
+                    attack: 0.2,
+                    decay: 0.2,
+                    sustain: 0.5,
+                    release: 0.5
+                },
+                filterEnvelope: {
+                    attack: 0.1,
+                    decay: 0.2,
+                    sustain: 0.5,
+                    release: 0.8,
+                    baseFrequency: 200,
+                    octaves: 4,
+                    exponent: 2
+                }
+            });
+            
+            
+            // Creare un Riverbero leggero
+            const reverb = new Tone.Reverb({
+                decay: 2,
+                preDelay: 0.01,
+                wet: 0.2 // Quantità di effetto
+            }).toDestination();
+            
+            // Creare un filtro Lowpass con cutoff a 12kHz
+            const lowpass = new Tone.Filter({
+                type: "lowpass",
+                frequency: 12000, // Cutoff a 12kHz
+                rolloff: -24
+            }).toDestination();
+            
+            // Collegare il sintetizzatore agli effetti
+            monoSynth.chain(lowpass, reverb);
+
+            sequence = new Tone.Sequence((time, note) => {
+                monoSynth.triggerAttackRelease(note, "16n", time);
+            }, arpeggio, "16n");
+
+            sequence.start(0);
+            await Tone.start();
+            Tone.Transport.start();
+        };
+        
+        const stopArpeggio = () => {
+            if (sequence) {
+              sequence.stop(); // Ferma la sequenza
+            }
+            chordEvents = [];
+        }
+        const stopChords = () => {
+            // Ferma tutti gli eventi pianificati
+            chordEvents.forEach((id) => {
+                Tone.Transport.clear(id);
+            });
+        };
+
+        document.getElementById("playbutton_arpeggio").onclick = playArpeggio;
+        document.getElementById("stopbutton_arpeggio").onclick = stopArpeggio;
+        document.getElementById("playbutton_Chords").onclick = playChords;
+        document.getElementById("stopbutton_Chords").onclick = stopChords;
+
+
+    </script>
+</body>
+</html>
